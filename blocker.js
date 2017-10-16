@@ -16,9 +16,8 @@ function filterResult(item) {
     const host = new URL(url).host;
 
     const blacklisted = blacklist.some(pattern => {
-        if (typeof blacklist === 'string')
-            return host.includes(pattern);
-        return pattern.test(host);
+        return typeof blacklist === 'string' ?
+            host.includes(pattern) : pattern.test(host);
     });
     if (!blacklisted)
         return false;
@@ -40,9 +39,7 @@ function filterResult(item) {
 
 function filterAllResults() {
     const searches = Array.from(document.querySelectorAll('.g'));
-    let count = 0;
-    searches.forEach(item => count += filterResult(item));
-    return count;
+    return searches.reduce((count, item) => count + filterResult(item), 0);
 }
 
 function addObserver() {
@@ -50,15 +47,10 @@ function addObserver() {
         mutations.forEach(mut => {
             if (mut.type !== 'childList')
                 return;
-            let {target} = mut;
-            if (target.nodeType !== Node.ELEMENT_NODE)
+            if (mut.target.nodeType !== Node.ELEMENT_NODE)
                 return;
 
-            Array.from(mut.addedNodes).forEach(node => {
-                if (node.nodeType !== Node.ELEMENT_NODE)
-                    return;
-                filterResult(node);
-            });
+            Array.from(mut.addedNodes).forEach(node => filterResult(node));
         });
     });
 
@@ -68,11 +60,11 @@ function addObserver() {
     });
 }
 
-document.addEventListener('readystatechange', event => {
+document.addEventListener('readystatechange', () => {
     if (!/google\.[a-z]+$/.test(new URL(document.URL).host))
         return;
 
-    if (event.readyState === 'interactive')
+    if (document.readyState === 'interactive')
         addObserver();
 });
 
